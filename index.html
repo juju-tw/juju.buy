@@ -35,43 +35,36 @@
 </head>
 <body>
 
+  <!-- 針對 Instagram / LINE 等社群內建瀏覽器加入完整安全沙盒許可 -->
   <iframe 
     id="appFrame"
-    src="about:blank"
+    src="https://script.google.com/macros/s/AKfycbxltHUkooVMwTQxfLsHprPm4kvu_gV1K2Ofg24HXg9EHcrxTT4SMwhfO6Hcdh7IEKQX/exec"
     allow="clipboard-read; clipboard-write"
+    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
   ></iframe>
 
   <script>
     var baseGAS = "https://script.google.com/macros/s/AKfycbxltHUkooVMwTQxfLsHprPm4kvu_gV1K2Ofg24HXg9EHcrxTT4SMwhfO6Hcdh7IEKQX/exec";
     var frame = document.getElementById('appFrame');
 
-    // 取得當前網址的所有參數
-    var currentQuery = window.location.search || '';
-    var currentHash = window.location.hash || '';
-
-    // 安全編碼並構建內層 GAS URL
-    var targetUrl = baseGAS;
-    if (currentQuery) {
-      // 確保中文被安全百分比編碼，避免 GAS 伺服器解碼崩潰
-      try {
-        var sp = new URLSearchParams(currentQuery);
-        var safeParams = [];
-        sp.forEach(function(val, key) {
-          safeParams.push(encodeURIComponent(key) + '=' + encodeURIComponent(val));
-        });
-        if (safeParams.length > 0) {
-          targetUrl += '?' + safeParams.join('&');
+    // 取得當前網址參數並安全帶入
+    try {
+      var currentSearch = window.location.search;
+      var currentHash = window.location.hash;
+      
+      if (currentSearch) {
+        frame.src = baseGAS + currentSearch;
+      } else if (currentHash) {
+        var cleanHash = currentHash.replace(/^#/, '');
+        if (cleanHash.indexOf('?') !== -1) {
+          frame.src = baseGAS + cleanHash.substring(cleanHash.indexOf('?'));
+        } else {
+          frame.src = baseGAS + '?p=' + encodeURIComponent(cleanHash);
         }
-      } catch(e) {
-        targetUrl += encodeURI(currentQuery);
       }
-    } else if (currentHash) {
-      targetUrl += '#' + encodeURIComponent(currentHash.replace(/^#/, ''));
-    }
+    } catch(e) {}
 
-    frame.src = targetUrl;
-
-    // 監聽內層網址同步請求，無刷新更新外層瀏覽器網址列
+    // 監聽內層網址同步請求
     window.addEventListener('message', function(e) {
       try {
         if (!e.data || typeof e.data !== 'object') return;
