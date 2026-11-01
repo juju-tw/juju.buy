@@ -11,25 +11,33 @@
   <meta property="og:image" content="https://lh3.googleusercontent.com/d/1a-i8ddYbEUd8508IIFPbsSNNiYcFdFue">
 
   <script>
-    // 1. 偵測是否在 Instagram / FB / LINE 等社群內建瀏覽器 (In-App Browser)
-    var ua = navigator.userAgent || navigator.vendor || window.opera;
+    // 精準社群環境偵測：僅針對會變空白的 Meta 系列（Instagram, Threads, Facebook）
+    // LINE、一般 Safari、Chrome 均完全暢通，直接享受無警語滿版體驗！
+    var ua = navigator.userAgent || navigator.vendor || window.opera || '';
+    
     var isInstagram = (ua.indexOf('Instagram') > -1);
-    var isFB = (ua.indexOf('FBAN') > -1) || (ua.indexOf('FBAV') > -1);
+    var isThreads = (ua.indexOf('Barcelona') > -1) || (ua.indexOf('Threads') > -1);
+    var isFacebook = (ua.indexOf('FBAN') > -1) || (ua.indexOf('FBAV') > -1);
 
-    var baseGAS = "https://script.google.com/macros/s/AKfycbxltHUkooVMwTQxfLsHprPm4kvu_gV1K2Ofg24HXg9EHcrxTT4SMwhfO6Hcdh7IEKQX/exec";
-    var query = window.location.search || '';
-    if (!query && window.location.hash && window.location.hash.indexOf('?') !== -1) {
-      query = window.location.hash.substring(window.location.hash.indexOf('?'));
-    }
+    var isBlockedInApp = (isInstagram || isThreads || isFacebook);
 
-    // 若在 IG / FB 內建瀏覽器中，Meta 會徹底阻擋 iframe 內跨域載入 Google 程式
-    // 因此在 IG 內直接無縫轉向至 Google 原生端，100% 保證商品正常秒開！
-    if (isInstagram || isFB) {
-      window.location.replace(baseGAS + query);
+    // 若是 Android 且身處 Meta 內建瀏覽器，嘗試自動喚起 Chrome 開啟
+    if (isBlockedInApp && /Android/i.test(ua)) {
+      var currentFullUrl = window.location.href.replace(/https?:\/\//i, '');
+      window.location.href = 'intent://' + currentFullUrl + '#Intent;scheme=https;package=com.android.chrome;end';
     }
   </script>
 
   <style>
+    :root {
+      --primary: #6b3e26;
+      --bg: #faf6f2;
+      --border: #ebdcd0;
+      --text-main: #3d2c24;
+      --text-muted: #8c786c;
+      --accent: #d97736;
+    }
+
     * {
       box-sizing: border-box;
       margin: 0;
@@ -39,38 +47,311 @@
     html, body {
       width: 100%;
       height: 100%;
-      overflow: hidden;
-      background-color: #faf6f2;
+      background-color: var(--bg);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      overflow-x: hidden;
     }
 
-    iframe {
+    /* 滿版 iframe 樣式（一般 Safari / Chrome / 電腦瀏覽器使用） */
+    #appFrame {
       width: 100%;
       height: 100%;
       border: none;
       display: block;
     }
+
+    /* 社群 App 引導畫面（IG / FB / Threads / LINE 使用） */
+    #socialGuideWrap {
+      display: none;
+      min-height: 100vh;
+      width: 100%;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 20px 40px;
+      position: relative;
+    }
+
+    /* 右上角跳動提示箭頭 */
+    .corner-arrow-wrap {
+      position: fixed;
+      top: 14px;
+      right: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      z-index: 60;
+      pointer-events: none;
+      animation: floatJump 1.4s ease-in-out infinite;
+    }
+
+    .corner-arrow-badge {
+      background: var(--accent);
+      color: #ffffff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 12px;
+      margin-bottom: 4px;
+      box-shadow: 0 4px 12px rgba(217, 119, 54, 0.35);
+      white-space: nowrap;
+    }
+
+    .corner-arrow-svg {
+      width: 30px;
+      height: 30px;
+      color: var(--accent);
+      filter: drop-shadow(0 2px 4px rgba(217, 119, 54, 0.3));
+    }
+
+    @keyframes floatJump {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-7px); }
+    }
+
+    /* 主要引導卡片 */
+    .guide-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 32px 24px 26px;
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(107, 62, 38, 0.08);
+      position: relative;
+      z-index: 2;
+    }
+
+    .logo-img {
+      max-height: 80px;
+      margin-bottom: 12px;
+      border-radius: 12px;
+    }
+
+    .guide-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 6px;
+    }
+
+    .guide-subtitle {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 22px;
+      line-height: 1.5;
+    }
+
+    /* 步驟解說盒 */
+    .steps-container {
+      background: #fbf6f0;
+      border: 1px dashed #e6c5af;
+      border-radius: 16px;
+      padding: 16px 14px;
+      text-align: left;
+      margin-bottom: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .step-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.88rem;
+      color: #524037;
+      line-height: 1.45;
+    }
+
+    .step-num {
+      background: var(--primary);
+      color: #ffffff;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .step-highlight {
+      color: var(--accent);
+      font-weight: 700;
+      background: #fff;
+      padding: 1px 6px;
+      border-radius: 6px;
+      border: 1px solid #fed7aa;
+      display: inline-block;
+      margin: 0 2px;
+    }
+
+    /* 動作按鈕 */
+    .btn-copy {
+      width: 100%;
+      background: var(--primary);
+      color: #ffffff;
+      border: none;
+      padding: 13px;
+      border-radius: 14px;
+      font-size: 0.92rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: inherit;
+      box-shadow: 0 4px 14px rgba(107, 62, 38, 0.25);
+      transition: all 0.2s ease;
+    }
+
+    .btn-copy:hover {
+      background: #54301d;
+      transform: translateY(-1px);
+    }
+
+    .btn-copy.copied {
+      background: #2e7d32;
+    }
+
+    .url-display-box {
+      margin-top: 14px;
+      font-size: 0.75rem;
+      color: #948074;
+      word-break: break-all;
+      background: #f7ede3;
+      padding: 8px 12px;
+      border-radius: 10px;
+    }
+
+    .bottom-line-tag {
+      margin-top: 20px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
   </style>
 </head>
 <body>
 
-  <!-- 移除易被社群瀏覽器限制的 sandbox 屬性，賦予全功能權限 -->
+  <!-- 1. 滿版無警語 iframe：LINE / Safari / Chrome 直開正常運作 -->
   <iframe 
     id="appFrame"
-    src="https://script.google.com/macros/s/AKfycbxltHUkooVMwTQxfLsHprPm4kvu_gV1K2Ofg24HXg9EHcrxTT4SMwhfO6Hcdh7IEKQX/exec"
+    src=""
     allow="clipboard-read; clipboard-write; fullscreen"
   ></iframe>
 
+  <!-- 2. 社群導引畫面：僅在 Meta (IG / Threads / FB) 環境下出現 -->
+  <div id="inAppGuideView" class="inapp-guide-view">
+    <div class="corner-arrow-wrap">
+      <div class="corner-arrow-badge">點擊右上角開啟 ↗</div>
+      <svg class="corner-arrow-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="7" y1="17" x2="17" y2="7"></line>
+        <polyline points="7 7 17 7 17 17"></polyline>
+      </svg>
+    </div>
+
+    <div class="guide-card">
+      <img 
+        src="https://lh3.googleusercontent.com/d/1a-i8ddYbEUd8508IIFPbsSNNiYcFdFue" 
+        alt="胖啾代購 Logo" 
+        class="logo-img"
+      >
+      <h2 class="guide-title">胖啾代購｜日本連線目錄</h2>
+      <p class="guide-subtitle">
+        因 Meta 社群 App（IG / Threads / FB）瀏覽器限制，請改用一般瀏覽器開啟以完整檢視商品與照片 ✨
+      </p>
+
+      <div class="steps-container">
+        <div class="step-item">
+          <span class="step-num">1</span>
+          <div>
+            點擊右上角 <span class="step-highlight">···</span> 選單
+          </div>
+        </div>
+        <div class="step-item">
+          <span class="step-num">2</span>
+          <div>
+            點選 <span class="step-highlight">在預設瀏覽器中開啟</span>（Safari / Chrome）
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-copy" id="copyBtn" onclick="handleCopy()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+        <span id="btnText">複製目錄網址自行貼上</span>
+      </button>
+
+      <div class="url-display-box" id="targetUrl"></div>
+
+      <div class="bottom-line-tag">
+        若有任何連線或登記問題，歡迎洽詢 LINE 客服：<strong>@juju.buy</strong>
+      </div>
+    </div>
+  </div>
+
   <script>
+    var baseGAS = "https://script.google.com/macros/s/AKfycbxltHUkooVMwTQxfLsHprPm4kvu_gV1K2Ofg24HXg9EHcrxTT4SMwhfO6Hcdh7IEKQX/exec";
+    var query = window.location.search || '';
+    if (!query && window.location.hash && window.location.hash.indexOf('?') !== -1) {
+      query = window.location.hash.substring(window.location.hash.indexOf('?'));
+    }
+
     var frame = document.getElementById('appFrame');
+    var guideView = document.getElementById('inAppGuideView');
+    var targetUrlEl = document.getElementById('targetUrl');
 
-    try {
-      if (query) {
-        frame.src = baseGAS + query;
+    if (targetUrlEl) {
+      targetUrlEl.textContent = window.location.href;
+    }
+
+    if (isBlockedInApp) {
+      // 僅在 Meta（IG / Threads / FB）顯示日系導引
+      guideView.style.display = 'flex';
+      frame.style.display = 'none';
+    } else {
+      // LINE、Safari、Chrome、電腦端：完全順暢載入商品！
+      guideView.style.display = 'none';
+      frame.style.display = 'block';
+      frame.src = baseGAS + (query ? (query.indexOf('?') === 0 ? query : '?' + query) : '');
+    }
+
+    function handleCopy() {
+      var url = window.location.href;
+      var btn = document.getElementById('copyBtn');
+      var btnText = document.getElementById('btnText');
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(showCopiedState);
+      } else {
+        var input = document.createElement('input');
+        input.value = url;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+        showCopiedState();
       }
-    } catch(e) {}
 
-    // 監聽內層網址同步請求
+      function showCopiedState() {
+        btn.classList.add('copied');
+        btnText.textContent = '✅ 已複製！可直接前往 Safari / Chrome 貼上';
+        setTimeout(function() {
+          btn.classList.remove('copied');
+          btnText.textContent = '複製目錄網址自行貼上';
+        }, 2500);
+      }
+    }
+
+    // 監聽內層發送的分類更新事件
     window.addEventListener('message', function(e) {
       try {
         if (!e.data || typeof e.data !== 'object') return;
@@ -78,6 +359,7 @@
           var q = e.data.query ? ('?' + e.data.query) : '';
           var newUrl = window.location.pathname + q;
           window.history.replaceState(null, '', newUrl);
+          if (targetUrlEl) targetUrlEl.textContent = window.location.href;
         }
       } catch(err) {}
     });
