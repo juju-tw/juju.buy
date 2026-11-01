@@ -11,13 +11,18 @@
   <meta property="og:image" content="https://lh3.googleusercontent.com/d/1a-i8ddYbEUd8508IIFPbsSNNiYcFdFue">
 
   <style>
-    html, body {
+    * {
+      box-sizing: border-box;
       margin: 0;
       padding: 0;
+    }
+
+    html, body {
       width: 100%;
       height: 100%;
       overflow: hidden;
       background-color: #faf6f2;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC", "Microsoft JhengHei", sans-serif;
     }
 
     iframe {
@@ -32,52 +37,38 @@
 
   <iframe 
     id="appFrame"
-    src="https://script.google.com/macros/s/AKfycbxltHUkooVMwTQxfLsHprPm4kvu_gV1K2Ofg24HXg9EHcrxTT4SMwhfO6Hcdh7IEKQX/exec"
+    src="about:blank"
     allow="clipboard-read; clipboard-write"
   ></iframe>
 
   <script>
-    var frame = document.getElementById('appFrame');
     var baseGAS = "https://script.google.com/macros/s/AKfycbxltHUkooVMwTQxfLsHprPm4kvu_gV1K2Ofg24HXg9EHcrxTT4SMwhfO6Hcdh7IEKQX/exec";
+    var frame = document.getElementById('appFrame');
 
-    // 1. 解析目前網址列的參數物件
-    function getUrlParams() {
-      var params = {};
-      var search = window.location.search;
-      if (search) {
-        var sp = new URLSearchParams(search);
-        sp.forEach(function(val, key) {
-          params[key] = val;
-        });
-      }
-      return params;
+    // 取得當前網址的所有參數（例如 ?char=小熊維尼 或 ?p=2026聖誕節_維尼吊飾）
+    var currentQuery = window.location.search || '';
+    var currentHash = window.location.hash || '';
+
+    // 將外部 GitHub 網址帶進來的參數直接傳遞給 GAS 核心
+    var targetUrl = baseGAS;
+    if (currentQuery) {
+      targetUrl += currentQuery;
+    } else if (currentHash) {
+      targetUrl += '?' + currentHash.replace(/^#/, '');
     }
 
-    // 2. 當頁面載入時，如果網址列有參數（例如 ?char=米奇好朋友），直接透傳給 iframe
-    var initialSearch = window.location.search;
-    if (initialSearch) {
-      frame.src = baseGAS + initialSearch;
-    }
+    frame.src = targetUrl;
 
-    // 當 iframe 載入完成後，主動發送一次當前外層參數以確保內層執行篩選
-    frame.addEventListener('load', function() {
-      var params = getUrlParams();
-      if (Object.keys(params).length > 0) {
-        frame.contentWindow.postMessage({
-          type: 'APPLY_PARAMS',
-          params: params
-        }, '*');
-      }
-    });
-
-    // 3. 雙向同步：當內層更動分類、角色、主題或搜尋時，無刷新即時更新最上方 GitHub 網址列！
-    window.addEventListener('message', function(event) {
-      if (!event.data || typeof event.data !== 'object') return;
-      if (event.data.type === 'SYNC_URL') {
-        var newSearch = event.data.query ? ('?' + event.data.query) : '';
-        var newUrl = window.location.pathname + newSearch;
-        window.history.replaceState(null, '', newUrl);
-      }
+    // 監聽來自內層的網址同步請求
+    window.addEventListener('message', function(e) {
+      try {
+        if (!e.data || typeof e.data !== 'object') return;
+        if (e.data.type === 'SYNC_URL') {
+          var query = e.data.query ? ('?' + e.data.query) : '';
+          var newUrl = window.location.pathname + query;
+          window.history.replaceState(null, '', newUrl);
+        }
+      } catch(err) {}
     });
   </script>
 </body>
