@@ -44,14 +44,27 @@
   ></iframe>
 
   <script>
-    // 網址參數轉發：若有人點擊帶有 ?p=商品名 或 ?category=分類 的專屬連結，自動透傳給內層 GAS
+    var frame = document.getElementById('appFrame');
+    var baseSrc = "https://script.google.com/macros/s/AKfycbxltHUkooVMwTQxfLsHprPm4kvu_gV1K2Ofg24HXg9EHcrxTT4SMwhfO6Hcdh7IEKQX/exec";
+
+    // 1. 初始化：如果訪客點開帶有參數的 GitHub 網址，透傳給內層 GAS
     window.addEventListener('DOMContentLoaded', function() {
       var search = window.location.search;
       var hash = window.location.hash;
       if (search || hash) {
-        var frame = document.getElementById('appFrame');
-        var baseSrc = "https://script.google.com/macros/s/AKfycbxltHUkooVMwTQxfLsHprPm4kvu_gV1K2Ofg24HXg9EHcrxTT4SMwhfO6Hcdh7IEKQX/exec";
         frame.src = baseSrc + search + hash;
+      }
+    });
+
+    // 2. 雙向同步：接收內層 GAS 傳來的最新篩選狀態或商品頁，無刷新即時改寫外層 GitHub 網址列！
+    window.addEventListener('message', function(event) {
+      if (!event.data || typeof event.data !== 'object') return;
+      
+      // 當內層切換分類或打開商品時同步外層網址
+      if (event.data.type === 'SYNC_URL') {
+        var newSearch = event.data.query ? ('?' + event.data.query) : '';
+        var newUrl = window.location.pathname + newSearch;
+        window.history.replaceState(null, '', newUrl);
       }
     });
   </script>
