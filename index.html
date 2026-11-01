@@ -45,21 +45,33 @@
     var baseGAS = "https://script.google.com/macros/s/AKfycbxltHUkooVMwTQxfLsHprPm4kvu_gV1K2Ofg24HXg9EHcrxTT4SMwhfO6Hcdh7IEKQX/exec";
     var frame = document.getElementById('appFrame');
 
-    // 取得當前網址的所有參數（例如 ?char=小熊維尼 或 ?p=2026聖誕節_維尼吊飾）
+    // 取得當前網址的所有參數
     var currentQuery = window.location.search || '';
     var currentHash = window.location.hash || '';
 
-    // 安全組裝參數，將中文參數正確傳送進 Google Apps Script
+    // 安全編碼並構建內層 GAS URL
     var targetUrl = baseGAS;
     if (currentQuery) {
-      targetUrl += currentQuery;
+      // 確保中文被安全百分比編碼，避免 GAS 伺服器解碼崩潰
+      try {
+        var sp = new URLSearchParams(currentQuery);
+        var safeParams = [];
+        sp.forEach(function(val, key) {
+          safeParams.push(encodeURIComponent(key) + '=' + encodeURIComponent(val));
+        });
+        if (safeParams.length > 0) {
+          targetUrl += '?' + safeParams.join('&');
+        }
+      } catch(e) {
+        targetUrl += encodeURI(currentQuery);
+      }
     } else if (currentHash) {
-      targetUrl += '?' + currentHash.replace(/^#/, '');
+      targetUrl += '#' + encodeURIComponent(currentHash.replace(/^#/, ''));
     }
 
     frame.src = targetUrl;
 
-    // 監聽來自內層的網址同步請求，維持外部網址列最新狀態
+    // 監聽內層網址同步請求，無刷新更新外層瀏覽器網址列
     window.addEventListener('message', function(e) {
       try {
         if (!e.data || typeof e.data !== 'object') return;
