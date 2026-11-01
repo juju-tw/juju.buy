@@ -10,6 +10,25 @@
   <meta property="og:description" content="即時同步日本官方連線預購與現貨商品">
   <meta property="og:image" content="https://lh3.googleusercontent.com/d/1a-i8ddYbEUd8508IIFPbsSNNiYcFdFue">
 
+  <script>
+    // 1. 偵測是否在 Instagram / FB / LINE 等社群內建瀏覽器 (In-App Browser)
+    var ua = navigator.userAgent || navigator.vendor || window.opera;
+    var isInstagram = (ua.indexOf('Instagram') > -1);
+    var isFB = (ua.indexOf('FBAN') > -1) || (ua.indexOf('FBAV') > -1);
+
+    var baseGAS = "https://script.google.com/macros/s/AKfycbxltHUkooVMwTQxfLsHprPm4kvu_gV1K2Ofg24HXg9EHcrxTT4SMwhfO6Hcdh7IEKQX/exec";
+    var query = window.location.search || '';
+    if (!query && window.location.hash && window.location.hash.indexOf('?') !== -1) {
+      query = window.location.hash.substring(window.location.hash.indexOf('?'));
+    }
+
+    // 若在 IG / FB 內建瀏覽器中，Meta 會徹底阻擋 iframe 內跨域載入 Google 程式
+    // 因此在 IG 內直接無縫轉向至 Google 原生端，100% 保證商品正常秒開！
+    if (isInstagram || isFB) {
+      window.location.replace(baseGAS + query);
+    }
+  </script>
+
   <style>
     * {
       box-sizing: border-box;
@@ -35,32 +54,19 @@
 </head>
 <body>
 
-  <!-- 針對 Instagram / LINE 等社群內建瀏覽器加入完整安全沙盒許可 -->
+  <!-- 移除易被社群瀏覽器限制的 sandbox 屬性，賦予全功能權限 -->
   <iframe 
     id="appFrame"
     src="https://script.google.com/macros/s/AKfycbxltHUkooVMwTQxfLsHprPm4kvu_gV1K2Ofg24HXg9EHcrxTT4SMwhfO6Hcdh7IEKQX/exec"
-    allow="clipboard-read; clipboard-write"
-    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+    allow="clipboard-read; clipboard-write; fullscreen"
   ></iframe>
 
   <script>
-    var baseGAS = "https://script.google.com/macros/s/AKfycbxltHUkooVMwTQxfLsHprPm4kvu_gV1K2Ofg24HXg9EHcrxTT4SMwhfO6Hcdh7IEKQX/exec";
     var frame = document.getElementById('appFrame');
 
-    // 取得當前網址參數並安全帶入
     try {
-      var currentSearch = window.location.search;
-      var currentHash = window.location.hash;
-      
-      if (currentSearch) {
-        frame.src = baseGAS + currentSearch;
-      } else if (currentHash) {
-        var cleanHash = currentHash.replace(/^#/, '');
-        if (cleanHash.indexOf('?') !== -1) {
-          frame.src = baseGAS + cleanHash.substring(cleanHash.indexOf('?'));
-        } else {
-          frame.src = baseGAS + '?p=' + encodeURIComponent(cleanHash);
-        }
+      if (query) {
+        frame.src = baseGAS + query;
       }
     } catch(e) {}
 
@@ -69,8 +75,8 @@
       try {
         if (!e.data || typeof e.data !== 'object') return;
         if (e.data.type === 'SYNC_URL') {
-          var query = e.data.query ? ('?' + e.data.query) : '';
-          var newUrl = window.location.pathname + query;
+          var q = e.data.query ? ('?' + e.data.query) : '';
+          var newUrl = window.location.pathname + q;
           window.history.replaceState(null, '', newUrl);
         }
       } catch(err) {}
