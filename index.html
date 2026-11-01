@@ -5,21 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>胖啾代購｜日本連線商品目錄</title>
   
-  <!-- SEO 與社群分享預覽資訊（當您在 LINE 或 IG 貼上 GitHub 網址時會呈現的精美卡片） -->
   <meta name="description" content="胖啾代購日本連線商品目錄，即時掌握官方發售日程與最新預約。">
   <meta property="og:title" content="胖啾代購｜日本連線商品目錄">
   <meta property="og:description" content="即時同步日本官方連線預購與現貨商品">
   <meta property="og:image" content="https://lh3.googleusercontent.com/d/1a-i8ddYbEUd8508IIFPbsSNNiYcFdFue">
 
   <style>
-    /* 滿版無邊框設定：徹底去除捲軸與 Google 警語 */
     html, body {
       margin: 0;
       padding: 0;
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background-color: #faf6f2; /* 搭配胖啾代購招牌日系奶茶底色 */
+      background-color: #faf6f2;
     }
 
     iframe {
@@ -32,11 +30,6 @@
 </head>
 <body>
 
-  <!-- 
-    全螢幕載入您的 GAS Web App：
-    此處已將 src 預設填入您原本發布的 Google Apps Script 連結。
-    訪客進來時只會看到這個乾淨的 GitHub 網址，最上方完全不會有 Google 藍色警語！
-  -->
   <iframe 
     id="appFrame"
     src="https://script.google.com/macros/s/AKfycbxltHUkooVMwTQxfLsHprPm4kvu_gV1K2Ofg24HXg9EHcrxTT4SMwhfO6Hcdh7IEKQX/exec"
@@ -45,22 +38,41 @@
 
   <script>
     var frame = document.getElementById('appFrame');
-    var baseSrc = "https://script.google.com/macros/s/AKfycbxltHUkooVMwTQxfLsHprPm4kvu_gV1K2Ofg24HXg9EHcrxTT4SMwhfO6Hcdh7IEKQX/exec";
+    var baseGAS = "https://script.google.com/macros/s/AKfycbxltHUkooVMwTQxfLsHprPm4kvu_gV1K2Ofg24HXg9EHcrxTT4SMwhfO6Hcdh7IEKQX/exec";
 
-    // 1. 初始化：如果訪客點開帶有參數的 GitHub 網址，透傳給內層 GAS
-    window.addEventListener('DOMContentLoaded', function() {
+    // 1. 解析目前網址列的參數物件
+    function getUrlParams() {
+      var params = {};
       var search = window.location.search;
-      var hash = window.location.hash;
-      if (search || hash) {
-        frame.src = baseSrc + search + hash;
+      if (search) {
+        var sp = new URLSearchParams(search);
+        sp.forEach(function(val, key) {
+          params[key] = val;
+        });
+      }
+      return params;
+    }
+
+    // 2. 當頁面載入時，如果網址列有參數（例如 ?char=米奇好朋友），直接透傳給 iframe
+    var initialSearch = window.location.search;
+    if (initialSearch) {
+      frame.src = baseGAS + initialSearch;
+    }
+
+    // 當 iframe 載入完成後，主動發送一次當前外層參數以確保內層執行篩選
+    frame.addEventListener('load', function() {
+      var params = getUrlParams();
+      if (Object.keys(params).length > 0) {
+        frame.contentWindow.postMessage({
+          type: 'APPLY_PARAMS',
+          params: params
+        }, '*');
       }
     });
 
-    // 2. 雙向同步：接收內層 GAS 傳來的最新篩選狀態或商品頁，無刷新即時改寫外層 GitHub 網址列！
+    // 3. 雙向同步：當內層更動分類、角色、主題或搜尋時，無刷新即時更新最上方 GitHub 網址列！
     window.addEventListener('message', function(event) {
       if (!event.data || typeof event.data !== 'object') return;
-      
-      // 當內層切換分類或打開商品時同步外層網址
       if (event.data.type === 'SYNC_URL') {
         var newSearch = event.data.query ? ('?' + event.data.query) : '';
         var newUrl = window.location.pathname + newSearch;
