@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>胖啾代購｜日本連線商品目錄</title>
+  
+  <!-- SEO 與社群分享預覽資訊（當您在 LINE 或 IG 貼上 GitHub 網址時會呈現的精美卡片） -->
+  <meta name="description" content="胖啾代購日本連線商品目錄，即時掌握官方發售日程與最新預約。">
+  <meta property="og:title" content="胖啾代購｜日本連線商品目錄">
+  <meta property="og:description" content="即時同步日本官方連線預購與現貨商品">
+  <meta property="og:image" content="https://lh3.googleusercontent.com/d/1a-i8ddYbEUd8508IIFPbsSNNiYcFdFue">
+
+  <style>
+    /* 滿版無邊框設定：徹底去除捲軸與 Google 警語 */
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #faf6f2; /* 搭配胖啾代購招牌日系奶茶底色 */
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 
+    全螢幕載入您的 GAS Web App：
+    此處已將 src 預設填入您原本發布的 Google Apps Script 連結。
+    訪客進來時只會看到這個乾淨的 GitHub 網址，最上方完全不會有 Google 藍色警語！
+  -->
+  <iframe 
+    id="appFrame"
+    src="https://script.google.com/macros/s/AKfycbxltHUkooVMwTQxfLsHprPm4kvu_gV1K2Ofg24HXg9EHcrxTT4SMwhfO6Hcdh7IEKQX/exec"
+    allow="clipboard-read; clipboard-write"
+  ></iframe>
+
+  <script>
+    // 網址參數轉發：若有人點擊帶有 ?p=商品名 或 ?category=分類 的專屬連結，自動透傳給內層 GAS
+    window.addEventListener('DOMContentLoaded', function() {
+      var search = window.location.search;
+      var hash = window.location.hash;
+      if (search || hash) {
+        var frame = document.getElementById('appFrame');
+        var baseSrc = "https://script.google.com/macros/s/AKfycbxltHUkooVMwTQxfLsHprPm4kvu_gV1K2Ofg24HXg9EHcrxTT4SMwhfO6Hcdh7IEKQX/exec";
+        frame.src = baseSrc + search + hash;
+      }
+    });
+  </script>
+</body>
+</html>
